@@ -108,5 +108,5 @@ sections:
 
 # Rating widget
 plugins:
-- module: nireports.assembler
+- module: mriqc
   path: data/rating-widget/bootstrap.yml
