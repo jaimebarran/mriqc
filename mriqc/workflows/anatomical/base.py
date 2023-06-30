@@ -163,7 +163,9 @@ def anat_qc_workflow(name="anatMRIQC"):
         (norm, iqmswf, [
             ("outputnode.out_tpms", "inputnode.std_tpms")]),
         (norm, anat_report_wf, ([
-            ("outputnode.out_report", "inputnode.mni_report")])),
+            ("outputnode.out_report", "inputnode.mni_report"), 
+            ("outputnode.out_eyes", "inputnode.eyesmask")
+        ])),
         (norm, hmsk, [("outputnode.out_tpms", "inputnode.in_tpms")]),
         (to_ras, amw, [("out_file", "inputnode.in_file")]),
         (skull_stripping, amw, [("outputnode.out_mask", "inputnode.in_mask")]),
@@ -236,7 +238,7 @@ def spatial_normalization(name="SpatialNormalization"):
         name="inputnode",
     )
     outputnode = pe.Node(
-        niu.IdentityInterface(fields=["out_tpms", "out_report", "ind2std_xfm"]),
+        niu.IdentityInterface(fields=["out_tpms", "out_report", "ind2std_xfm", "out_eyes"]),
         name="outputnode",
     )
 
@@ -298,11 +300,28 @@ def spatial_normalization(name="SpatialNormalization"):
         str(p)
         for p in get_template(
             config.workflow.template_id,
-            suffix="probseg",
+            suffix="probseg", # reescribir nodo para máscara de ojo (cambiar suffix y label)
             resolution=(1 if config.workflow.species.lower() == "human" else None),
             label=["CSF", "GM", "WM"],
         )
     ]
+
+    eyes_std2t1w = pe.Node(
+        ApplyTransforms(
+            dimension=3,
+            default_value=0,
+            interpolation="MultiLabel",
+            float=config.execution.ants_float,
+        ),
+        name="eyes_std2t1w",
+    )
+
+    eyes_std2t1w.inputs.input_image = str(get_template(
+        config.workflow.template_id,
+        suffix="mask", # reescribir nodo para máscara de ojo (cambiar suffix y label)
+        resolution=(1 if config.workflow.species.lower() == "human" else None),
+        desc="eye",
+    ))
 
     # fmt: off
     workflow.connect([
@@ -310,7 +329,11 @@ def spatial_normalization(name="SpatialNormalization"):
                            ("moving_mask", "moving_mask"),
                            ("modality", "reference")]),
         (inputnode, tpms_std2t1w, [("moving_image", "reference_image")]),
+        (inputnode, eyes_std2t1w, [("moving_image", "reference_image")]),
         (norm, tpms_std2t1w, [
+            ("inverse_composite_transform", "transforms"),
+        ]),
+        (norm, eyes_std2t1w, [
             ("inverse_composite_transform", "transforms"),
         ]),
         (norm, outputnode, [
@@ -318,6 +341,7 @@ def spatial_normalization(name="SpatialNormalization"):
             ("out_report", "out_report"),
         ]),
         (tpms_std2t1w, outputnode, [("output_image", "out_tpms")]),
+        (eyes_std2t1w, outputnode, [("output_image", "out_eyes")]),
     ])
     # fmt: on
 

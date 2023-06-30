@@ -105,7 +105,7 @@ WORKDIR /src/
 RUN python -c "from templateflow import api as tfapi; \
                tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix=['T1w', 'T2w'], desc=None); \
                tfapi.get('MNI152NLin2009cAsym', resolution=[1, 2], suffix='mask',\
-                         desc=['brain', 'head']); \
+                         desc=['brain', 'head', 'eye']); \
                tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='dseg', desc='carpet'); \
                tfapi.get('MNI152NLin2009cAsym', resolution=1, suffix='probseg',\
                          label=['CSF', 'GM', 'WM']);\

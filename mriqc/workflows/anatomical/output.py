@@ -52,6 +52,7 @@ def init_anat_report_wf(name: str = "anat_report_wf"):
             fields=[
                 "in_ras",
                 "brainmask",
+                "eyesmask",
                 "headmask",
                 "airmask",
                 "artmask",
@@ -105,7 +106,7 @@ def init_anat_report_wf(name: str = "anat_report_wf"):
     workflow.connect([
         # (inputnode, rnode, [("in_iqms", "in_iqms")]),
         (inputnode, mosaic_zoom, [("in_ras", "in_file"),
-                                  ("brainmask", "bbox_mask_file")]),
+                                  ("eyesmask", "bbox_mask_file")]), # eyemask vs brainmask
         (inputnode, mosaic_noise, [("in_ras", "in_file")]),
         (inputnode, ds_report_zoomed, [("name_source", "source_file")]),
         (inputnode, ds_report_background, [("name_source", "source_file")]),
