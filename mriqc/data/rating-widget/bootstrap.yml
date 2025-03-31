@@ -2,8 +2,8 @@ type: rating-widget
 id: qcrating
 defaults:
   md5sum: unspecified
-  dataset: unknown
-  filename: unspecified
+  dataset: 
+  filename: 
   endpoint: "https://localhost:8000/"
   access_token: <secret_token>
 settings:
@@ -35,18 +35,36 @@ components:
       head-motion: Head motion artifacts
       eye-motion: Eye motion artifacts
       inu: Intensity non-uniformity (B<sub>1</sub> bias)
-      blurred-image: Blurred image
-      rigid-motion: Rigid motion artifacts (lens, globe)
-      non-rigid-motion: Non-rigid motion artifacts (optic nerve)
-      noise-low: Noise artifacts (low-rank)
-      noise-medium: Noise artifacts (medium-rank)
-      noise-high: Noise artifacts (high-rank)
-      distorted-geometry: Distorted geometry
-      eye-spillover: Eye spillover through <abbr title="phase-encoding">PE</abbr> axis
-      noneye-spillover: Non-eye spillover through <abbr title="phase-encoding">PE</abbr> axis
       eyes-closed: Eyes closed
-      processing: Processing such as denoising, defacing or resamplings happened
-      uncategorized: Other uncategorized artifact(s)
+    extra:
+      id: artifactsextra
+      title: Extra artifacts
+      collapsse: true
+      components:
+        - settings:
+            label: Blurred image (contours)
+            class: slider
+            type: range
+            step: '0.05'
+            value: '2.0'
+            min: '1.0'
+            max: '3.0'
+          options:
+            - ['Low', 'primary']
+            - ['Medium', 'warning']
+            - ['High', 'danger']
+        - settings:
+            label: Noise level (low frequency)
+            class: slider
+            type: range
+            step: '0.05'
+            value: '2.0'
+            min: '1.0'
+            max: '3.0'
+          options:
+            - ['Low', 'primary']
+            - ['Medium', 'warning']
+            - ['High', 'danger']
   extra:
     id: qcextra
     title: Extra details

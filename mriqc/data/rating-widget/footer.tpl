@@ -37,6 +37,27 @@
                 <label class="form-check-label" for="{{ config.components.artifacts.id }}-item-{{ loop.index0 }}">{{ label }}</label>
             </div>
             {% endfor %}
+            <div id="{{ config.components.artifacts.extra }}-collapse" class="accordion-collapse collapse" aria-labelledby="{{ config.components.artifacts.extra }}-head">
+              <div class="accordion-body">
+                <p style="margin-top: 20px">{{ config.components.artifacts.extra.components[0].settings.label }}</p>
+                <input type="range" min="{{ config.components.artifacts.extra.components[0].settings.min }}" max="{{ config.components.artifacts.extra.components[0].settings.max }}" step="{{ config.components.artifacts.extra.components[0].settings.step }}" value="{{ config.components.artifacts.extra.components[0].settings.value }}" id="{{ config.components.artifacts.extra.id }}-blur" class="slider" style="margin-left: 22%;width: 56%;">
+                <ul class="list-group list-group-horizontal slider-labels" style="width: 100%">
+                    {% for opt in config.components.artifacts.extra.components[0].options %}
+                    <li class="list-group-item list-group-item-{{ opt[2] }} small" style="width: 50%; text-align:center">{{ opt[1] }} {{ opt[0] }}</li>
+                    {% endfor %}
+                </ul>
+              </div> <!-- accordion-body -->
+              <div class="accordion-body">
+                <p style="margin-top: 20px">{{ config.components.artifacts.extra.components[1].settings.label }}</p>
+                <input type="range" min="{{ config.components.artifacts.extra.components[1].settings.min }}" max="{{ config.components.artifacts.extra.components[1].settings.max }}" step="{{ config.components.artifacts.extra.components[1].settings.step }}" value="{{ config.components.artifacts.extra.components[1].settings.value }}" id="{{ config.components.artifacts.extra.id }}-blur" class="slider" style="margin-left: 22%;width: 56%;">
+                <ul class="list-group list-group-horizontal slider-labels" style="width: 100%">
+                    {% for opt in config.components.artifacts.extra.components[1].options %}
+                    <li class="list-group-item list-group-item-{{ opt[2] }} small" style="width: 50%; text-align:center">{{ opt[1] }} {{ opt[0] }}</li>
+                    {% endfor %}
+                </ul>
+              </div> <!-- accordion-body -->
+            </div> <!-- accordion-collapse -->
+
         </fieldset>
       </div> <!-- accordion-body -->
     </div> <!-- accordion-collapse -->

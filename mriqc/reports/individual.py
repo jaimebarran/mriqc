@@ -25,6 +25,7 @@ from pathlib import Path
 from json import loads
 from pkg_resources import resource_filename as pkgrf
 from nireports.assembler.report import Report
+# from mriqc.reports.report import Report
 
 
 def generate_reports():
