@@ -385,7 +385,7 @@ class HarmonizeInputSpec(BaseInterfaceInputSpec):
     wm_mask = File(exists=True, mandatory=True, desc='white-matter mask')
     brain_mask = File(exists=True, desc='brain mask (fall-back in case [near]-empty WM mask)')
     erodemsk = traits.Bool(True, usedefault=True, desc='erode mask')
-    thresh = traits.Float(0.9, usedefault=True, desc='WM probability threshold')
+    thresh = traits.Float(0.65, usedefault=True, desc='WM probability threshold')
     min_size = traits.Int(30, usedefault=True, desc='minimum number of voxels in binary WM mask')
 
 
