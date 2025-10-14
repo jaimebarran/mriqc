@@ -143,6 +143,11 @@ RUN micromamba install -n base -c conda-forge "ants=2.5" \
 	    && micromamba clean -afy; sync \
 	    && ldconfig
 
+# Upgrade libstdc++ via Conda to get GLIBCXX_3.4.32+
+RUN micromamba install -n base -c conda-forge libstdcxx-ng=13.1.0 && \
+    micromamba clean -afy && \
+    ldconfig
+
 # Unless otherwise specified each process should only use one thread - nipype
 # will handle parallelization
 ENV MKL_NUM_THREADS=1 \
