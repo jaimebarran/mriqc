@@ -23,7 +23,7 @@
 """
 Anatomical tests
 """
-from builtins import object
+
 from shutil import rmtree
 from tempfile import mkdtemp
 
@@ -35,8 +35,8 @@ from scipy.stats import rice
 from ..anatomical import art_qi2
 
 
-class GroundTruth(object):
-    def get_data(self, sigma, noise="normal"):
+class GroundTruth:
+    def get_data(self, sigma, noise='normal'):
         """Generates noisy 3d data"""
         size = (50, 50, 50)
         test_data = np.ones(size)
@@ -50,19 +50,17 @@ class GroundTruth(object):
         test_data[bgdata > 0] = bg_mean
         test_data[wmdata > 0] = wm_mean
 
-        if noise == "rice":
+        if noise == 'rice':
             test_data += rice.rvs(0.77, scale=sigma * wm_mean, size=test_data.shape)
-        elif noise == "rayleigh":
+        elif noise == 'rayleigh':
             test_data += np.random.rayleigh(scale=sigma * wm_mean, size=test_data.shape)
         else:
-            test_data += np.random.normal(
-                0.0, scale=sigma * wm_mean, size=test_data.shape
-            )
+            test_data += np.random.normal(0.0, scale=sigma * wm_mean, size=test_data.shape)
 
         return test_data, wmdata, bgdata
 
 
-@pytest.fixture
+@pytest.fixture()
 def gtruth():
     return GroundTruth()
 
@@ -105,10 +103,11 @@ def gtruth():
 #     assert abs(snr_dietrich(data, wmdata, bgdata) - (1/sigma)) < 10
 
 
-@pytest.mark.parametrize("sigma", [0.02, 0.03, 0.05, 0.08, 0.12, 0.15, 0.2, 0.4, 0.5])
+@pytest.mark.parametrize('sigma', [0.02, 0.03, 0.05, 0.08, 0.12, 0.15, 0.2, 0.4, 0.5])
 def test_qi2(gtruth, sigma):
     tmpdir = mkdtemp()
     data, _, bgdata = gtruth.get_data(sigma, rice)
     value, _ = art_qi2(data, bgdata, save_plot=False)
     rmtree(tmpdir)
-    assert value > 0.0 and value < 0.04
+    assert value > 0.0
+    assert value < 0.04

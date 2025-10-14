@@ -23,10 +23,12 @@
 """
 Extracts the sha hash of the contents of a nifti file.
 """
+
 from argparse import ArgumentParser, RawTextHelpFormatter
 from hashlib import sha1
 
 import nibabel as nb
+
 from mriqc.bin import messages
 
 
@@ -41,10 +43,10 @@ def get_parser() -> ArgumentParser:
     """
 
     parser = ArgumentParser(
-        description="Compare two pandas dataframes.",
+        description='Compare two pandas dataframes.',
         formatter_class=RawTextHelpFormatter,
     )
-    parser.add_argument("input_file", action="store", help="input nifti file")
+    parser.add_argument('input_file', action='store', help='input nifti file')
     return parser
 
 
@@ -74,5 +76,5 @@ def main():
     print(message)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

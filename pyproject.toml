@@ -1,118 +1,127 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs", "nipreps-versions"]
 build-backend = "hatchling.build"
+requires = ["hatchling", "hatch-vcs", "nipreps-versions"]
 
 [project]
-name = "mriqc"
-description = "Automated Quality Control and visual reports for Quality Assessment of structural (T1w, T2w) and functional MRI of the brain."
-readme = "README.rst"
 authors = [{name = "The NiPreps Developers", email = "nipreps@gmail.com"}]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Intended Audience :: Science/Research",
-    "Topic :: Scientific/Engineering :: Image Recognition",
-    "Topic :: Scientific/Engineering :: Bio-Informatics",
-    "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10"
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Image Recognition",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
 ]
-license = "Apache-2.0"
-requires-python = ">=3.8"
 dependencies = [
-    'importlib_resources; python_version < "3.9"',
-    # jinja2 imports deprecated function removed in 2.1
-    "markupsafe ~= 2.0.1",
-    "matplotlib",
-    "migas",
-    "mriqc-learn",
-    "nibabel >= 3.0.1",
-    "nilearn >= 0.5.1",
-    "nipype ~= 1.4",
-    "nireports ~= 23.1", 
-    "nitransforms ~= 23.0", 
-    "niworkflows >= 1.7.7", 
-    "numpy ~=1.20",
-    "pandas ~=1.0",
-    "pybids >= 0.15.6",
-    "PyYAML",
-    "scikit-learn",
-    "scipy ~=1.8",
-    "statsmodels",
-    "toml",
-    "torch >= 1.10.2",
+  "acres",
+  "dipy >= 1.10.0",
+  'importlib_resources; python_version < "3.9"', # jinja2 imports deprecated function removed in 2.1
+  "markupsafe ~= 2.0.1",
+  "matplotlib",
+  "migas >= 0.4.0",
+  "mriqc-learn",
+  "nibabel >= 3.0.1",
+  "nilearn >= 0.5.1",
+  "nipype ~= 1.4",
+  "nireports ~= 24.0.2",
+  "nitransforms ~= 24.0",
+  "niworkflows ~=1.10.1",
+  "numpy ~=1.20",
+  "orjson",
+  "pandas",
+  "pybids >= 0.15.6",
+  "PyYAML",
+  "scikit-learn",
+  "scipy ~=1.8",
+  "statsmodels",
+  "templateflow",
+  "toml",
+  "tomli >= 1.1.0; python_version < '3.11'",
+  "torch >= 1.10.2",
 ]
+description = "Automated Quality Control and visual reports for Quality Assessment of structural (T1w, T2w) and functional MRI of the brain."
 dynamic = ["version"]
+license = "Apache-2.0"
+name = "mriqc"
+readme = "README.rst"
+requires-python = ">=3.9"
 
 [project.urls]
-Homepage = "https://github.com/nipreps/mriqc"
-NiPreps = "https://www.nipreps.org/"
+"Docker Images" = "https://hub.docker.com/r/nipreps/mriqc/tags/"
 Documentation = "https://mriqc.readthedocs.io/"
+Homepage = "https://github.com/nipreps/mriqc"
 Manuscript = "https://doi.org/10.1371/journal.pone.0184661"
+NiPreps = "https://www.nipreps.org/"
 "Sci Dat Paper" = "https://doi.org/10.1038/s41597-019-0035-4"
 "Web API" = "https://mriqc.nimh.nih.gov/"
-"Docker Images" = "https://hub.docker.com/r/nipreps/mriqc/tags/"
 
 [project.optional-dependencies]
 doc = [
-    "nipype",
-    "packaging",
-    "pydot>=1.2.3",
-    "pydotplus",
-    "sphinx-argparse",
-    "sphinx_rtd_theme",
-    "sphinx~=4.0",
+  "nipype",
+  "packaging",
+  "pydot>=1.2.3",
+  "pydotplus",
+  "sphinx-argparse",
+  "sphinx_rtd_theme",
+  "sphinx~=5.0",
 ]
 
-full = [
-    "nitime",
-    "nirodents >= 0.2.8",
-    "seaborn",
-    "templateflow",
-    "xvfbwrapper",
+container = [
+  # templateflow extras
+  "datalad",
+  "datalad-osf",
+]
+
+rodents = [
+  "nirodents >= 0.2.8",
 ]
 
 notebook = [
-    "ipython",
-    "jupyter",
-    "nipy",
+  "ipython",
+  "jupyter",
+  "nipy",
 ]
 
 dev = [
-    "black ~= 22.3.0",
-    "pre-commit",
-    "isort ~= 5.10.1",
-    "flake8-pyproject",
+    "ruff",
 ]
 
 test = [
-    "coverage",
-    "mock",
-    "pytest",
-    "pytest-cov",
-    "pytest-xdist",
+  "coverage",
+  "mock",
+  "pytest",
+  "pytest-cov",
+  "pytest-env",
+  "pytest-xdist",
 ]
 
 other = [
-    "scikit-image",
+  "nitime",
+  "scikit-image",
+  "seaborn",
+  "xvfbwrapper",
 ]
 
 # Aliases
+all = ["mriqc[doc,container,test,notebook,other,rodents]"]
 docs = ["mriqc[doc]"]
-tests = ["mriqc[test]"]
 others = ["mriqc[other]"]
-all = ["mriqc[doc,full,test,notebook,other]"]
+tests = ["mriqc[test]"]
 
 [project.scripts]
-mriqc = "mriqc.cli.run:main"
-synthstrip = "mriqc.synthstrip.cli:main"
 abide2bids = "mriqc.bin.abide2bids:main"
-fs2gif = "mriqc.bin.fs2gif:main"
 dfcheck = "mriqc.bin.dfcheck:main"
-nib-hash = "mriqc.bin.nib_hash:main"
-participants = "mriqc.bin.subject_wrangler:main"
+fs2gif = "mriqc.bin.fs2gif:main"
+mriqc = "mriqc.cli.run:main"
 mriqc_labeler = "mriqc.bin.labeler:main"
 mriqcwebapi_test = "mriqc.bin.mriqcwebapi_test:main"
+nib-hash = "mriqc.bin.nib_hash:main"
+participants = "mriqc.bin.subject_wrangler:main"
+synthstrip = "mriqc.synthstrip.cli:main"
 
 #
 # Hatch configurations
@@ -122,7 +131,7 @@ mriqcwebapi_test = "mriqc.bin.mriqcwebapi_test:main"
 allow-direct-references = true
 
 [tool.hatch.build.targets.sdist]
-exclude = [".git_archival.txt"]  # No longer needed in sdist
+exclude = [".git_archival.txt"] # No longer needed in sdist
 
 [tool.hatch.build.targets.wheel]
 packages = ["mriqc"]
@@ -141,9 +150,8 @@ __version__ = "{version}"
 fallback_version = "0.0"
 
 [tool.hatch.version]
-validate-bump = true
+raw-options = {version_scheme = "nipreps-calver"}
 source = "vcs"
-raw-options = { version_scheme = "nipreps-calver" }
 
 [tool.hatch.build.hooks.vcs]
 version-file = "mriqc/_version.py"
@@ -152,63 +160,31 @@ version-file = "mriqc/_version.py"
 # Developer tool configurations
 #
 
-[tool.black]
-line-length = 99
-target-version = ['py39']
-skip-string-normalization = true
-exclude = '''
-# Directories
-/(
-    \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | venv
-  | _build
-  | build
-  | dist
-)/
-'''
-
-[tool.isort]
-profile = 'black'
-skip_gitignore = true
-
-[tool.flake8]
-max-line-length = "99"
-doctests = "False"
-exclude = "*build/"
-ignore = ["W503", "E203"]
-per-file-ignores = [
-    "**/__init__.py : F401",
-    "docs/conf.py : E265",
-]
-
 [tool.pytest.ini_options]
-norecursedirs = [".git"]
-addopts = "-svx --doctest-modules"
+addopts = ["-svx", "--doctest-modules", "-ra", "--strict-config", "--strict-markers"]
 doctest_optionflags = "ALLOW_UNICODE NORMALIZE_WHITESPACE ELLIPSIS"
 env = "PYTHONHASHSEED=0"
 filterwarnings = ["ignore::DeprecationWarning"]
 junit_family = "xunit2"
-
+log_cli_level = "INFO"
+minversion = "7"
+norecursedirs = [".git"]
+xfail_strict = true
 
 [tool.coverage.run]
 branch = true
 omit = [
-    '*/tests/*',
-    '*/__init__.py',
-    '*/conftest.py',
-    'mriqc/_version.py'
+  '*/tests/*',
+  '*/__init__.py',
+  '*/conftest.py',
+  'mriqc/_version.py',
 ]
 
 [tool.coverage.report]
 # Regexes for lines to exclude from consideration
 exclude_lines = [
-    'raise NotImplementedError',
-    'warnings\.warn',
+  'raise NotImplementedError',
+  'warnings\.warn',
 ]
 
 [tool.codespell]
@@ -218,3 +194,50 @@ ignore-words-list = 'nd,mapp,reson'
 skip = """
 ./.git,*.pdf,*.svg,*.min.js,*.ipynb,ORIGINAL_LICENSE,\
 ./docs/source/_static/example_anatreport.html"""
+
+[tool.ruff]
+exclude = [".maint/update_authors.py"]
+line-length = 99
+
+[tool.ruff.lint]
+extend-select = [
+  "F",
+  "E",
+  "W",
+  "I",
+  "UP",
+  "YTT",
+  "S",
+  "BLE",
+  "B",
+  "A", # "CPY",
+  "C4",
+  "DTZ",
+  "T10", # "EM",
+  "EXE",
+  "FA",
+  "ISC",
+  "ICN",
+  "PT",
+  "Q",
+]
+ignore = [
+  "F841",
+  "S311", # We are not using random for cryptographic purposes
+  "S603",
+]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+
+[tool.ruff.lint.extend-per-file-ignores]
+"*/test_*.py" = ["S101"]
+"docs/source/conf.py" = ["A001"]
+"mriqc/bin/nib_hash.py" = ["S324"]
+"mriqc/config.py" = ["S105"]
+"mriqc/conftest.py" = ["PT004"]
+"mriqc/engine/plugin.py" = ["BLE001"]
+"mriqc/utils/debug.py" = ["A002", "T100"]
+
+[tool.ruff.format]
+quote-style = "single"

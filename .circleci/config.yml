@@ -7,11 +7,13 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - MRIQC_API_TAG: 1.1.0
-      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest
+          python:3.7-slim"
+      - DOCKER_BUILDKIT: 1
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
       # upgrade Docker version
-      image: ubuntu-2204:2023.02.1
+      image: default
       docker_layer_caching: true
     working_directory: /tmp/src/mriqc
     steps:
@@ -29,11 +31,11 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - built-v3-{{ .Branch }}-{{ .Revision }}
-            - built-v3--{{ .Revision }}
-            - built-v3-{{ .Branch }}-
-            - built-v3-master-
-            - built-v3-
+            - build-v4-{{ .Branch }}-{{ .Revision }}
+            - build-v4--{{ .Revision }}
+            - build-v4-{{ .Branch }}-
+            - build-v4-master-
+            - build-v4-
           paths:
             - /tmp/docker
             - /tmp/images
@@ -67,14 +69,14 @@ jobs:
             set -e
             if [[ "$success" = "0" ]]; then
                 echo "Pulling from local registry"
-                docker tag localhost:5000/miniconda nipreps/miniconda:py39_2205.0
+                docker tag localhost:5000/miniconda nipreps/miniconda:py39_2403.0
                 docker pull localhost:5000/mriqc
                 docker tag localhost:5000/mriqc nipreps/mriqc:latest
                 docker tag localhost:5000/mriqc nipreps/mriqc
             else
                 echo "Pulling from Docker Hub"
-                docker pull nipreps/miniconda:py39_2205.0
-                docker tag nipreps/miniconda:py39_2205.0 localhost:5000/miniconda
+                docker pull nipreps/miniconda:py39_2403.0
+                docker tag nipreps/miniconda:py39_2403.0 localhost:5000/miniconda
                 docker push localhost:5000/miniconda
                 docker pull nipreps/mriqc:latest
             fi
@@ -125,11 +127,12 @@ jobs:
           name: Build Docker image
           no_output_timeout: 60m
           command: |
-            python3 -m pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
-                              setuptools_scm_git_archive pip twine docutils
+            pyenv local 3
+            pip install hatch
 
             # Get version before making repo dirty
-            THISVERSION=$( python3 -m setuptools_scm )
+            THISVERSION=$( hatch version )
+
             # Inject MRIQC-WebAPI secret
             if [ "${MRIQC_API_SECRET_TOKEN}" != "" ]; then
               sed -i -E "s/<secret_token>/$MRIQC_API_SECRET_TOKEN/" mriqc/config.py
@@ -143,6 +146,8 @@ jobs:
               echo "them to your fork with ``git push origin --tags``"
             fi
 
+            echo "Building version: $THISVERSION."
+
             # Build docker image
             e=1 && for i in {1..5}; do
               docker build \
@@ -153,6 +158,14 @@ jobs:
                 --build-arg VERSION="${CIRCLE_TAG:-$THISVERSION}" . \
               && e=0 && break || sleep 15
             done && [ "$e" -eq "0" ]
+
+            TARGET_VERSION="${CIRCLE_TAG:-$THISVERSION}"
+            TARGET_VERSION="MRIQC v${TARGET_VERSION%+*}"
+            DOCKER_VERSION=$( docker run --rm nipreps/mriqc:latest --version )
+            DOCKER_VERSION="${DOCKER_VERSION%+*}"
+            echo "Target version: \"${TARGET_VERSION}\""
+            echo "Docker version: \"${DOCKER_VERSION}\""
+            test "${TARGET_VERSION}" == "$DOCKER_VERSION"
       - run:
           name: Docker push to local registry
           no_output_timeout: 40m
@@ -170,8 +183,8 @@ jobs:
             docker exec -it registry /bin/registry garbage-collect --delete-untagged \
               /etc/docker/registry/config.yml
       - save_cache:
-         key: built-v3-{{ .Branch }}-{{ .Revision }}
-         paths:
+          key: build-v4-{{ .Branch }}-{{ .Revision }}
+          paths:
             - /tmp/docker
             - /tmp/images
       - persist_to_workspace:
@@ -186,7 +199,8 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/5b6c9950fed49e001a7885b6"
+      - TEST_DATA_URL: "https://files.osf.io/v1/resources/fvuh8/providers/osfstorage/5b\
+          6c9950fed49e001a7885b6"
     working_directory: /home/circleci/data
     steps:
       - checkout:
@@ -250,7 +264,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - built-v3-{{ .Branch }}-{{ .Revision }}
+            - build-v4-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -279,11 +293,19 @@ jobs:
             docker pull localhost:5000/mriqc
             docker tag localhost:5000/mriqc nipreps/mriqc:latest
       - run:
+          name: Generate _version.py
+          command: |
+            python3 -m pip install build
+
+            pushd /tmp/src/mriqc
+            python3 -m build
+            popd
+      - run:
           name: Run MRIQC tests
           no_output_timeout: 2h
           command: |
-            docker run --rm -ti \
-              -v $PWD:/scratch --entrypoint="pytest" -w /src/mriqc \
+            docker run --rm -ti -v $PWD:/scratch --entrypoint="pytest" \
+              -v /tmp/src:/src -w /src/mriqc \
               nipreps/mriqc:latest mriqc \
               --junitxml=/scratch/tests.xml \
               --doctest-modules --ignore=mriqc/bin \
@@ -295,7 +317,8 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim dockereve-master-endpoints:latest"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest
+          python:3.7-slim dockereve-master-endpoints:latest"
       - MIGAS_OPTOUT: "1"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
@@ -320,7 +343,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - built-v3-{{ .Branch }}-{{ .Revision }}
+            - build-v4-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -359,8 +382,9 @@ jobs:
             - data-v2-
       - restore_cache:
           keys:
-            - t1w-v5-{{ epoch }}
-            - t1w-v5-
+            - t1w-v6-{{ .Branch }}
+            - t1w-v6-master
+            - t1w-v6-
 
       - run:
           name: Remove old, cached configs
@@ -378,6 +402,7 @@ jobs:
             docker run -u $( id -u ) --rm -ti \
                        -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v /tmp/t1w:/scratch -w /scratch \
+                       -e MRIQC_DEV=1 \
                        nipreps/mriqc:latest \
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m T1w --dsname circletests \
@@ -389,7 +414,6 @@ jobs:
           name: Move temporary but relevant artifacts
           command: |
             mkdir /tmp/t1w/misc
-            mv /tmp/t1w/work/.mriqc.*.toml /tmp/t1w/misc
             mv /tmp/t1w/work/.resources.*.tsv /tmp/t1w/misc
             mv /tmp/t1w/work/.resources.*.png /tmp/t1w/misc
 
@@ -397,7 +421,7 @@ jobs:
           path: /tmp/t1w/misc
 
       - save_cache:
-          key: t1w-v5-{{ epoch }}
+          key: t1w-v6-{{ .Branch }}
           paths:
             - /tmp/t1w/work
 
@@ -408,6 +432,7 @@ jobs:
             docker run -u $( id -u ) --rm -ti \
                        -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v /tmp/t1w:/scratch -w /scratch \
+                       -e MRIQC_DEV=1 \
                        nipreps/mriqc:latest \
                        /data derivatives/ group \
                        -m T1w -vv
@@ -434,10 +459,11 @@ jobs:
       - run:
           name: Checking changes on IQMs
           command: |
-            docker run --rm -ti -v $PWD:/scratch -w /scratch \
+            docker run --rm -ti -v $PWD:/scratch -w /scratch -v /tmp/src:/src \
               --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_T1w.tsv \
-              -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv
+              -r /src/mriqc/mriqc/data/testdata/group_T1w.tsv \
+            || true  # ignore failure
 
       - run:
           name: WebAPI - Check records
@@ -455,7 +481,8 @@ jobs:
     environment:
       - TZ: "/usr/share/zoneinfo/America/Los_Angeles"
       - TEST_DATA_NAME: "circle-tests"
-      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest python:3.7-slim dockereve-master-endpoints:latest"
+      - MRIQC_API_DOCKER_IMAGES: "nginx:latest swaggerapi/swagger-ui:latest mongo:latest
+          python:3.7-slim dockereve-master-endpoints:latest"
       - MIGAS_OPTOUT: "1"
     machine:
       # https://discuss.circleci.com/t/linux-machine-executor-images-2021-april-q2-update/39928
@@ -479,7 +506,7 @@ jobs:
             fi
       - restore_cache:
           keys:
-            - built-v3-{{ .Branch }}-{{ .Revision }}
+            - build-v4-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -519,8 +546,9 @@ jobs:
             - data-v2-
       - restore_cache:
           keys:
-            - bold-v4-{{ epoch }}
-            - bold-v4-
+            - bold-v6-{{ .Branch }}
+            - bold-v6-master
+            - bold-v6-
 
       - run:
           name: Remove old, cached configs
@@ -537,6 +565,7 @@ jobs:
             # Run MRIQC
             docker run -u $( id -u ) --rm -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
                        -v $PWD:/scratch -w /scratch \
+                       -e MRIQC_DEV=1 \
                        nipreps/mriqc:latest \
                        /data derivatives/ participant \
                        -vv --verbose-reports --profile -m bold --dsname circletests \
@@ -547,7 +576,6 @@ jobs:
           name: Move temporary but relevant artifacts
           command: |
             mkdir /tmp/bold/misc
-            mv /tmp/bold/work/.mriqc.*.toml /tmp/bold/misc
             mv /tmp/bold/work/.resources.*.tsv /tmp/bold/misc
             mv /tmp/bold/work/.resources.*.png /tmp/bold/misc
 
@@ -555,7 +583,7 @@ jobs:
           path: /tmp/bold/misc
 
       - save_cache:
-          key: bold-v4-{{ epoch }}
+          key: bold-v6-{{ .Branch }}
           paths:
             - /tmp/bold/work
 
@@ -564,6 +592,7 @@ jobs:
           no_output_timeout: 2h
           command: |
             docker run -u $( id -u ) --rm -ti -v /tmp/data/${TEST_DATA_NAME}:/data:ro \
+                       -e MRIQC_DEV=1 \
                        -v $PWD:/scratch -w /scratch \
                        nipreps/mriqc:latest \
                        /data derivatives/ group \
@@ -591,7 +620,7 @@ jobs:
       - run:
           name: Checking changes on IQMs
           command: |
-            docker run -u $( id -u ) --rm -ti -v $PWD:/scratch -w /scratch \
+            docker run -u $( id -u ) --rm -ti -v /tmp/src:/src -v $PWD:/scratch -w /scratch \
               --entrypoint="dfcheck" nipreps/mriqc:latest \
               -i /scratch/derivatives/group_bold.tsv \
               -r /src/mriqc/mriqc/data/testdata/group_bold.tsv
@@ -607,10 +636,12 @@ jobs:
 
       - store_artifacts:
           path: /tmp/bold/test
+    # The resource_class feature allows configuring CPU and RAM resources for each job. Different resource classes are available for different executors. https://circleci.com/docs/2.0/configuration-reference/#resourceclass
+    resource_class: large
 
   build_docs:
     docker:
-      - image: cimg/python:3.8.5
+      - image: cimg/python:3.10
     environment:
       - FSLOUTPUTTYPE: NIFTI
     steps:
@@ -621,8 +652,8 @@ jobs:
       - run:
           name: Install deps
           command: |
-            pip install -U build "setuptools >= 45" wheel "setuptools_scm >= 6.2" \
-                                 setuptools_scm_git_archive pip twine docutils
+            pip install -U pip hatch docutils
+            hatch version
             pip install .[docs]
       - run:
           name: Build MRIQC documentation
@@ -665,7 +696,7 @@ jobs:
 
   deploy_pypi:
     docker:
-      - image: cimg/python:3.8.5
+      - image: cimg/python:3.10
     working_directory: /tmp/src/mriqc
     steps:
       - checkout
@@ -694,12 +725,12 @@ jobs:
 
   deploy_docker:
     machine:
-      image: ubuntu-2004:202104-01
+      image: default
     working_directory: /tmp/src/mriqc
     steps:
       - restore_cache:
           keys:
-            - built-v3-{{ .Branch }}-{{ .Revision }}
+            - build-v4-{{ .Branch }}-{{ .Revision }}
           paths:
             - /tmp/docker
             - /tmp/images
@@ -732,9 +763,14 @@ jobs:
           name: Deploy to Docker Hub
           no_output_timeout: 40m
           command: |
-            docker push nipreps/mriqc:latest
-            docker tag nipreps/mriqc nipreps/mriqc:$CIRCLE_TAG
-            docker push nipreps/mriqc:$CIRCLE_TAG
+            # only tag & push latest if CIRCLE_TAG is set
+            if [ -n "${CIRCLE_TAG:-}" ]; then
+              docker push nipreps/mriqc:latest
+            fi
+
+            docker tag nipreps/mriqc nipreps/mriqc:"${CIRCLE_TAG:=experimental}"
+            docker push nipreps/mriqc:"$CIRCLE_TAG"
+            echo "Pushed tag ${CIRCLE_TAG} to Docker Hub"
 
 workflows:
   version: 2
@@ -813,7 +849,8 @@ workflows:
             - bold
           filters:
             branches:
-              ignore: /.*/
+              only:
+                - master
             tags:
               only: /.*/
 

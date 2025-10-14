@@ -20,7 +20,9 @@
 #
 #     https://www.nipreps.org/community/licensing/
 #
-from mriqc import config, messages
+from pathlib import Path
+
+import orjson
 from nipype.interfaces.base import (
     BaseInterfaceInputSpec,
     Bunch,
@@ -32,97 +34,101 @@ from nipype.interfaces.base import (
     traits,
 )
 
+from mriqc import config, messages
+
 # metadata whitelist
 META_WHITELIST = [
-    "AccelNumReferenceLines",
-    "AccelerationFactorPE",
-    "AcquisitionMatrix",
-    "CogAtlasID",
-    "CogPOID",
-    "CoilCombinationMethod",
-    "ContrastBolusIngredient",
-    "ConversionSoftware",
-    "ConversionSoftwareVersion",
-    "DelayTime",
-    "DeviceSerialNumber",
-    "EchoTime",
-    "EchoTrainLength",
-    "EffectiveEchoSpacing",
-    "FlipAngle",
-    "GradientSetType",
-    "HardcopyDeviceSoftwareVersion",
-    "ImageType",
-    "ImagingFrequency",
-    "InPlanePhaseEncodingDirection",
-    "InstitutionAddress",
-    "InstitutionName",
-    "Instructions",
-    "InversionTime",
-    "MRAcquisitionType",
-    "MRTransmitCoilSequence",
-    "MagneticFieldStrength",
-    "Manufacturer",
-    "ManufacturersModelName",
-    "MatrixCoilMode",
-    "MultibandAccelerationFactor",
-    "NumberOfAverages",
-    "NumberOfPhaseEncodingSteps",
-    "NumberOfVolumesDiscardedByScanner",
-    "NumberOfVolumesDiscardedByUser",
-    "NumberShots",
-    "ParallelAcquisitionTechnique",
-    "ParallelReductionFactorInPlane",
-    "PartialFourier",
-    "PartialFourierDirection",
-    "PatientPosition",
-    "PercentPhaseFieldOfView",
-    "PercentSampling",
-    "PhaseEncodingDirection",
-    "PixelBandwidth",
-    "ProtocolName",
-    "PulseSequenceDetails",
-    "PulseSequenceType",
-    "ReceiveCoilName",
-    "RepetitionTime",
-    "ScanOptions",
-    "ScanningSequence",
-    "SequenceName",
-    "SequenceVariant",
-    "SliceEncodingDirection",
-    "SoftwareVersions",
-    "TaskDescription",
-    "TaskName",
-    "TotalReadoutTime",
-    "TotalScanTimeSec",
-    "TransmitCoilName",
-    "VariableFlipAngleFlag",
-    "acq_id",
-    "modality",
-    "run_id",
-    "subject_id",
-    "task_id",
-    "session_id",
+    'AccelNumReferenceLines',
+    'AccelerationFactorPE',
+    'AcquisitionMatrix',
+    'CogAtlasID',
+    'CogPOID',
+    'CoilCombinationMethod',
+    'ContrastBolusIngredient',
+    'ConversionSoftware',
+    'ConversionSoftwareVersion',
+    'DelayTime',
+    'DeviceSerialNumber',
+    'EchoTime',
+    'EchoTrainLength',
+    'EffectiveEchoSpacing',
+    'FlipAngle',
+    'GradientSetType',
+    'HardcopyDeviceSoftwareVersion',
+    'ImageType',
+    'ImagingFrequency',
+    'InPlanePhaseEncodingDirection',
+    'InstitutionAddress',
+    'InstitutionName',
+    'Instructions',
+    'InversionTime',
+    'MRAcquisitionType',
+    'MRTransmitCoilSequence',
+    'MagneticFieldStrength',
+    'Manufacturer',
+    'ManufacturersModelName',
+    'MatrixCoilMode',
+    'MultibandAccelerationFactor',
+    'NumberOfAverages',
+    'NumberOfPhaseEncodingSteps',
+    'NumberOfVolumesDiscardedByScanner',
+    'NumberOfVolumesDiscardedByUser',
+    'NumberShots',
+    'ParallelAcquisitionTechnique',
+    'ParallelReductionFactorInPlane',
+    'PartialFourier',
+    'PartialFourierDirection',
+    'PatientPosition',
+    'PercentPhaseFieldOfView',
+    'PercentSampling',
+    'PhaseEncodingDirection',
+    'PixelBandwidth',
+    'ProtocolName',
+    'PulseSequenceDetails',
+    'PulseSequenceType',
+    'ReceiveCoilName',
+    'RepetitionTime',
+    'ScanOptions',
+    'ScanningSequence',
+    'SequenceName',
+    'SequenceVariant',
+    'SliceEncodingDirection',
+    'SoftwareVersions',
+    'TaskDescription',
+    'TaskName',
+    'TotalReadoutTime',
+    'TotalScanTimeSec',
+    'TransmitCoilName',
+    'VariableFlipAngleFlag',
+    'acq_id',
+    'modality',
+    'run_id',
+    'subject_id',
+    'task_id',
+    'session_id',
 ]
 
-PROV_WHITELIST = ["version", "md5sum", "software", "settings"]
+PROV_WHITELIST = ['version', 'md5sum', 'software', 'settings']
 
-HASH_BIDS = ["subject_id", "session_id"]
+HASH_BIDS = ['subject_id', 'session_id']
 
 
 class UploadIQMsInputSpec(BaseInterfaceInputSpec):
-    in_iqms = File(exists=True, mandatory=True, desc="the input IQMs-JSON file")
-    endpoint = Str(mandatory=True, desc="URL of the POST endpoint")
-    auth_token = Str(mandatory=True, desc="authentication token")
-    email = Str(desc="set sender email")
-    strict = traits.Bool(
-        False, usedefault=True, desc="crash if upload was not successful"
+    in_iqms = File(exists=True, mandatory=True, desc='the input IQMs-JSON file')
+    endpoint = Str(mandatory=True, desc='URL of the POST endpoint')
+    auth_token = Str(mandatory=True, desc='authentication token')
+    email = Str(desc='set sender email')
+    strict = traits.Bool(False, usedefault=True, desc='crash if upload was not successful')
+    modality = Str(
+        'undefined',
+        usedefault=True,
+        desc='override modality field if provided through metadata',
     )
 
 
 class UploadIQMsOutputSpec(TraitedSpec):
-    api_id = traits.Either(
-        None, traits.Str, desc="Id for report returned by the web api"
-    )
+    api_id = traits.Either(None, traits.Str, desc='Id for report returned by the web api')
+    payload_file = File(desc='Submitted payload (only for debugging)')
 
 
 class UploadIQMs(SimpleInterface):
@@ -139,22 +145,37 @@ class UploadIQMs(SimpleInterface):
         if isdefined(self.inputs.email):
             email = self.inputs.email
 
-        self._results["api_id"] = None
+        self._results['api_id'] = None
 
-        response = upload_qc_metrics(
+        response, payload = upload_qc_metrics(
             self.inputs.in_iqms,
             endpoint=self.inputs.endpoint,
             auth_token=self.inputs.auth_token,
             email=email,
+            modality=self.inputs.modality,
         )
 
+        payload_str = orjson.dumps(
+            payload,
+            option=(
+                orjson.OPT_SORT_KEYS
+                | orjson.OPT_INDENT_2
+                | orjson.OPT_APPEND_NEWLINE
+                | orjson.OPT_SERIALIZE_NUMPY
+            ),
+        ).decode('utf-8')
+        Path('payload.json').write_text(payload_str)
+        self._results['payload_file'] = str(Path('payload.json').absolute())
+
         try:
-            self._results["api_id"] = response.json()["_id"]
+            self._results['api_id'] = response.json()['_id']
         except (AttributeError, KeyError, ValueError):
             # response did not give us an ID
             errmsg = (
-                "QC metrics upload failed to create an ID for the record "
-                "uplOADED. rEsponse from server follows: {}".format(response.text)
+                'QC metrics upload failed to create an ID for the record '
+                f'uploaded. Response from server follows: {response.text}'
+                '\n\nPayload:\n'
+                f'{payload_str}'
             )
             config.loggers.interface.warning(errmsg)
 
@@ -162,13 +183,20 @@ class UploadIQMs(SimpleInterface):
             config.loggers.interface.info(messages.QC_UPLOAD_COMPLETE)
             return runtime
 
-        errmsg = "QC metrics failed to upload. Status %d: %s" % (
-            response.status_code,
-            response.text,
+        errmsg = '\n'.join(
+            [
+                'Unsuccessful upload.',
+                f'Server response status {response.status_code}:',
+                response.text,
+                '',
+                '',
+                'Payload:',
+                f'{payload_str}',
+            ]
         )
         config.loggers.interface.warning(errmsg)
         if self.inputs.strict:
-            raise RuntimeError(response.text)
+            raise RuntimeError(errmsg)
 
         return runtime
 
@@ -178,6 +206,7 @@ def upload_qc_metrics(
     endpoint=None,
     email=None,
     auth_token=None,
+    modality=None,
 ):
     """
     Upload qc metrics to remote repository.
@@ -194,66 +223,81 @@ def upload_qc_metrics(
 
     """
     from copy import deepcopy
-    from json import dumps, loads
-    from pathlib import Path
 
     import requests
 
     if not endpoint or not auth_token:
         # If endpoint unknown, do not even report what happens to the token.
-        errmsg = "Unknown API endpoint" if not endpoint else "Authentication failed."
+        errmsg = 'Unknown API endpoint' if not endpoint else 'Authentication failed.'
         return Bunch(status_code=1, text=errmsg)
 
-    in_data = loads(Path(in_iqms).read_text())
+    in_data = orjson.loads(Path(in_iqms).read_bytes())
 
     # Extract metadata and provenance
-    meta = in_data.pop("bids_meta")
-
-    # For compatibility with WebAPI. Should be rolled back to int
-    if meta.get("run_id", None) is not None:
-        meta["run_id"] = "%d" % meta.get("run_id")
-
-    prov = in_data.pop("provenance")
+    meta = in_data.pop('bids_meta')
+    prov = in_data.pop('provenance')
 
     # At this point, data should contain only IQMs
     data = deepcopy(in_data)
 
     # Check modality
-    modality = meta.get("modality", "None")
-    if modality not in ("T1w", "bold", "T2w"):
+    modality = meta.get('modality', None) or meta.get('suffix', None) or modality
+    if modality not in ('T1w', 'bold', 'T2w'):
         errmsg = (
             'Submitting to MRIQCWebAPI: image modality should be "bold", "T1w", or "T2w", '
-            '(found "%s")' % modality
+            f'(found "{modality}")'
         )
         return Bunch(status_code=1, text=errmsg)
 
     # Filter metadata values that aren't in whitelist
-    data["bids_meta"] = {k: meta[k] for k in META_WHITELIST if k in meta}
+    data['bids_meta'] = {k: meta[k] for k in META_WHITELIST if k in meta}
+
+    # Check for fields with appended _id
+    bids_meta_names = {k: k.replace('_id', '') for k in META_WHITELIST if k.endswith('_id')}
+    data['bids_meta'].update({k: meta[v] for k, v in bids_meta_names.items() if v in meta})
+
+    # For compatibility with WebAPI. Should be rolled back to int
+    if (run_id := data['bids_meta'].get('run_id', None)) is not None:
+        data['bids_meta']['run_id'] = f'{run_id}'
+
+    # One more chance for spelled-out BIDS entity acquisition
+    if (acq_id := meta.get('acquisition', None)) is not None:
+        data['bids_meta']['acq_id'] = acq_id
+
     # Filter provenance values that aren't in whitelist
-    data["provenance"] = {k: prov[k] for k in PROV_WHITELIST if k in prov}
+    data['provenance'] = {k: prov[k] for k in PROV_WHITELIST if k in prov}
 
     # Hash fields that may contain personal information
-    data["bids_meta"] = _hashfields(data["bids_meta"])
+    data['bids_meta'] = _hashfields(data['bids_meta'])
+
+    data['bids_meta']['modality'] = modality
 
     if email:
-        data["provenance"]["email"] = email
+        data['provenance']['email'] = email
 
-    headers = {"Authorization": auth_token, "Content-Type": "application/json"}
+    headers = {'Authorization': auth_token, 'Content-Type': 'application/json'}
 
     start_message = messages.QC_UPLOAD_START.format(url=endpoint)
     config.loggers.interface.info(start_message)
+
+    errmsg = None
     try:
         # if the modality is bold, call "bold" endpoint
         response = requests.post(
-            f"{endpoint}/{modality}", headers=headers, data=dumps(data)
+            f'{endpoint}/{modality}',
+            headers=headers,
+            data=orjson.dumps(data, option=orjson.OPT_SERIALIZE_NUMPY),
+            timeout=15,
         )
     except requests.ConnectionError as err:
-        errmsg = (
-            "QC metrics failed to upload due to connection error shown below:\n%s" % err
-        )
-        return Bunch(status_code=1, text=errmsg)
+        errmsg = ('Error uploading IQMs: Connection error:', f'{err}')
+    except requests.exceptions.ReadTimeout as err:
+        errmsg = (f'Error uploading IQMs: Server {endpoint} is down.', f'{err}')
 
-    return response
+    if errmsg is not None:
+        response = Bunch(status_code=1, text='\n'.join(errmsg))
+
+    return response, data
 
 
 def _hashfields(data):

@@ -1,20 +1,60 @@
 
 .. _running_mriqc:
 
-Running mriqc
-=============
-.. tip::
-     Try MRIQC online on `OpenNeuro <https://www.openneuro.org/>`_ - without
-     installation!
-
-MRIQC is a `BIDS-App <http://bids-apps.neuroimaging.io/>`_ [BIDSApps]_,
+Running *MRIQC*
+***************
+*MRIQC* is a `BIDS-App <http://bids-apps.neuroimaging.io/>`_ [BIDSApps]_,
 and therefore it inherently understands the :abbr:`BIDS (brain
-imaging data structure)` standard [BIDS]_ and follows the
-BIDS-Apps standard command line interface::
+imaging data structure)` standard [BIDS]_.
+Before moving forward, please make sure to have read and understood
+*NiPreps*'s
+`introductory documentation <https://www.nipreps.org/apps/framework/>`__).
+
+Containerized execution with *Docker* and *Singularity*/*Apptainer*
+-------------------------------------------------------------------
+For containerized execution with *Docker* or *Singularity*/*Apptainer*, please
+follow the documentation on the *NiPreps* site, which contains
+tip and troubleshooting guidelines for both
+`Docker <https://www.nipreps.org/apps/docker/>`__, and
+`Singularity or Apptainer <https://www.nipreps.org/apps/singularity/>`__.
+In addition to container-specific guidelines, the documentation
+also includes specific
+`help for processing DataLad-managed datasets <https://www.nipreps.org/apps/datalad/>`__.
+
+The rest of this documentation page applies to both *bare-metal*
+and containerized execution modes.
+
+*MRIQC* can fetch data in *DataLad* datasets
+--------------------------------------------
+As of version 22.0.3, *MRIQC* bundles *DataLad*, enabling automatic
+data fetching in *DataLad* datasets.
+Employing this feature in containerized environments may lead to
+somewhat obscure errors (see, for example,
+`nipreps/mriqc#1307 <https://github.com/nipreps/mriqc/issues/1307>`__).
+If you intend to use *DataLad* datasets, please read carefully
+*NiPreps*' `help for processing DataLad-managed datasets <https://www.nipreps.org/apps/datalad/>`__.
+
+Alternatively, this feature can be disabled by adding
+``--no-datalad-get`` to the command line.
+This will separate *DataLad* management from *MRIQC*'s operation,
+which can be an effective way of debugging issues and averting
+erroneous conditions.
+
+Troubleshooting
+---------------
+If you encounter problems, please check our
+`NiPreps Guidelines for Singularity or Apptainer <https://www.nipreps.org/apps/singularity/>`__.
+Common tips and guidelines that used to be found within *MRIQC*'s
+or *fMRIPrep*'s documentation sites have been relocated in the
+general *NiPreps* website.
+
+A *BIDS Apps* command line interface
+------------------------------------
+*MRIQC* follows the *BIDS Apps* standard command line interface::
 
   mriqc bids-root/ output-folder/ participant
 
-That simple command runs MRIQC on all the *T1w* and *BOLD* images found
+That simple command runs *MRIQC* on all the *T1w* and *BOLD* images found
 under the BIDS-compliant folder ``bids-root/``.
 The last ``participant`` keyword indicates that the first level analysis
 is run. (i.e. extracting the :abbr:`IQMs (image quality metrics)` from the
@@ -71,23 +111,19 @@ in :ref:`The MRIQC Reports <reports>`.
     first place are combined in a table and the group reports are generated.
 
 Command line interface
-----------------------
+......................
 .. argparse::
    :ref: mriqc.cli.parser._build_parser
    :prog: mriqc
    :nodefault:
    :nodefaultconst:
 
-Running mriqc on HPC clusters
------------------------------
-Singularity containers
-......................
-Requesting resources
-....................
+Running *MRIQC* on HPC with *Singularity*/*Apptainer*
+-----------------------------------------------------
 We have profiled cores and memory usages with the *resource profiler*
-tool of nipype.
+tool of *Nipype*.
 
-An MRIQC run of one subject (from the ABIDE) dataset, containing only one
+An *MRIQC* run of one subject (from the ABIDE) dataset, containing only one
 run, one BOLD task (resting-state) yielded the following report:
 
   .. raw:: html
@@ -111,11 +147,9 @@ on ds030 of OpenfMRI:
   maximum of 10GB. Since we saw a memory consumption of 1-2GB during the
   the 1-task example, a rule of thumb may be that each task takes around
   1GB of memory.
-
+  
 .. topic:: References
 
   .. [BIDS] `Brain Imaging Data Structure <http://bids.neuroimaging.io/>`_
   .. [BIDSApps] `BIDS-Apps: portable neuroimaging pipelines that understand BIDS
      datasets <http://bids-apps.neuroimaging.io/>`_
-
-.. include:: license.rst

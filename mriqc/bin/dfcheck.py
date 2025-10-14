@@ -23,12 +23,14 @@
 """
 Compares pandas dataframes by columns.
 """
+
 import sys
 from argparse import ArgumentParser, RawTextHelpFormatter
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
 from mriqc.bin import messages
 from mriqc.utils.misc import BIDS_COMP
 
@@ -37,38 +39,33 @@ def read_iqms(feat_file):
     """Read in a features table."""
     feat_file = Path(feat_file)
 
-    if feat_file.suffix == ".csv":
-        bids_comps = list(BIDS_COMP.keys())
-        x_df = pd.read_csv(
-            feat_file, index_col=False, dtype={col: str for col in bids_comps}
-        )
+    if feat_file.suffix == '.csv':
+        x_df = pd.read_csv(feat_file, index_col=False, dtype={col: str for col in BIDS_COMP})
         # Find present bids bits and sort by them
-        bids_comps_present = list(set(x_df.columns.ravel().tolist()) & set(bids_comps))
-        bids_comps_present = [bit for bit in bids_comps if bit in bids_comps_present]
+        bids_comps_present = list(set(x_df.columns) & set(BIDS_COMP))
+        bids_comps_present = [bit for bit in BIDS_COMP if bit in bids_comps_present]
         x_df = x_df.sort_values(by=bids_comps_present)
         # Remove sub- prefix in subject_id
-        x_df.subject_id = x_df.subject_id.str.lstrip("sub-")
+        x_df.subject_id = x_df.subject_id.str.lstrip('sub-')
 
         # Remove columns that are not IQMs
-        feat_names = list(x_df._get_numeric_data().columns.ravel())
-        for col in bids_comps:
+        feat_names = x_df._get_numeric_data().columns.tolist()
+        for col in BIDS_COMP:
             try:
                 feat_names.remove(col)
             except ValueError:
                 pass
     else:
-        bids_comps_present = ["subject_id"]
-        x_df = pd.read_csv(
-            feat_file, index_col=False, sep="\t", dtype={"bids_name": str}
-        )
-        x_df = x_df.sort_values(by=["bids_name"])
-        x_df["subject_id"] = x_df.bids_name.str.lstrip("sub-")
-        x_df = x_df.drop(columns=["bids_name"])
-        x_df.subject_id = ["_".join(v.split("_")[:-1]) for v in x_df.subject_id.ravel()]
-        feat_names = list(x_df._get_numeric_data().columns.ravel())
+        bids_comps_present = ['subject_id']
+        x_df = pd.read_csv(feat_file, index_col=False, sep='\t', dtype={'bids_name': str})
+        x_df = x_df.sort_values(by=['bids_name'])
+        x_df['subject_id'] = x_df.bids_name.str.lstrip('sub-')
+        x_df = x_df.drop(columns=['bids_name'])
+        x_df.subject_id = ['_'.join(v.split('_')[:-1]) for v in x_df.subject_id.ravel()]
+        feat_names = x_df._get_numeric_data().columns.tolist()
 
     for col in feat_names:
-        if col.startswith(("size_", "spacing_", "Unnamed")):
+        if col.startswith(('size_', 'spacing_', 'Unnamed')):
             feat_names.remove(col)
 
     return x_df, feat_names, bids_comps_present
@@ -77,31 +74,31 @@ def read_iqms(feat_file):
 def main():
     """Entry point."""
     parser = ArgumentParser(
-        description="Compare two pandas dataframes.",
+        description='Compare two pandas dataframes.',
         formatter_class=RawTextHelpFormatter,
     )
-    g_input = parser.add_argument_group("Inputs")
+    g_input = parser.add_argument_group('Inputs')
     g_input.add_argument(
-        "-i",
-        "--input-csv",
-        action="store",
+        '-i',
+        '--input-csv',
+        action='store',
         type=Path,
         required=True,
-        help="input data frame",
+        help='input data frame',
     )
     g_input.add_argument(
-        "-r",
-        "--reference-csv",
-        action="store",
+        '-r',
+        '--reference-csv',
+        action='store',
         type=Path,
         required=True,
-        help="reference dataframe",
+        help='reference dataframe',
     )
     g_input.add_argument(
-        "--tolerance",
+        '--tolerance',
         type=float,
         default=1.0e-5,
-        help="relative tolerance for comparison",
+        help='relative tolerance for comparison',
     )
 
     opts = parser.parse_args()
@@ -134,9 +131,7 @@ def main():
         tst_keep = np.sum(tst_rows.isin(ref_rows).values.ravel().tolist())
         print(tst_keep)
 
-    diff = ~np.isclose(
-        ref_df[ref_names].values, tst_df[tst_names].values, rtol=opts.tolerance
-    )
+    diff = ~np.isclose(ref_df[ref_names].values, tst_df[tst_names].values, rtol=opts.tolerance)
     if np.any(diff):
         # ne_stacked = pd.DataFrame(data=diff, columns=ref_names).stack()
         # ne_stacked = np.isclose(ref_df[ref_names], tst_df[ref_names]).stack()
@@ -147,13 +142,13 @@ def main():
         changed_to = tst_df[ref_names].values[difference_locations]
         cols = [ref_names[v] for v in difference_locations[1]]
         bids_df = ref_df.loc[difference_locations[0], ref_bids].reset_index()
-        chng_df = pd.DataFrame({"iqm": cols, "from": changed_from, "to": changed_to})
+        chng_df = pd.DataFrame({'iqm': cols, 'from': changed_from, 'to': changed_to})
         table = pd.concat([bids_df, chng_df], axis=1)
-        print(table[ref_bids + ["iqm", "from", "to"]].to_string(index=False))
+        print(table[ref_bids + ['iqm', 'from', 'to']].to_string(index=False))
 
         corr = pd.DataFrame()
-        corr["iqms"] = ref_names
-        corr["cc"] = [
+        corr['iqms'] = ref_names
+        corr['cc'] = [
             float(
                 np.corrcoef(
                     ref_df[[var]].values.ravel(),
@@ -175,5 +170,5 @@ def main():
     sys.exit(0)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

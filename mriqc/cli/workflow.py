@@ -34,12 +34,14 @@ a hard-limited memory-scope.
 def build_workflow(config_file, retval):
     """Create the Nipype Workflow that supports the whole execution graph."""
     import os
-    from mriqc import config, messages
-    os.environ["OMP_NUM_THREADS"] = "1"
 
-    from mriqc.workflows.core import init_mriqc_wf
+    from mriqc import config
 
     # We do not need OMP > 1 for workflow creation
+    os.environ['OMP_NUM_THREADS'] = '1'
+    os.environ['NUMEXPR_MAX_THREADS'] = '1'
+
+    from mriqc.workflows.core import init_mriqc_wf
 
     config.load(config_file)
     # Initialize nipype config
@@ -47,17 +49,11 @@ def build_workflow(config_file, retval):
     # Make sure loggers are started
     config.loggers.init()
 
-    start_message = messages.PARTICIPANT_START.format(
-        version=config.environment.version,
-        bids_dir=config.execution.bids_dir,
-        output_dir=config.execution.output_dir,
-        analysis_level=config.workflow.analysis_level,
-    )
-    config.loggers.cli.log(25, start_message)
+    retval['return_code'] = 1
+    retval['workflow'] = None
 
-    retval["return_code"] = 1
-    retval["workflow"] = None
-
-    retval["workflow"] = init_mriqc_wf()
-    retval["return_code"] = int(retval["workflow"] is None)
+    config.loggers.cli.log(25, "Building MRIQC's workflows...")
+    retval['workflow'] = init_mriqc_wf()
+    retval['return_code'] = int(retval['workflow'] is None)
+    config.loggers.cli.log(25, f'Workflow building finished (exit code {retval["return_code"]}).')
     return retval

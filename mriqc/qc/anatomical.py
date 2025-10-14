@@ -151,7 +151,8 @@ Other measures
 
 - :py:func:`~mriqc.qc.anatomical.summary_stats` (**summary_\*_\***):
   Mean, median, median absolute deviation (mad), standard deviation, kurtosis,
-  5% percentile, 95% percentile and number of voxels of the distribution of background,
+  5% percentile, 95% percentile and number of voxels of the distribution of background (bg),
+  foreground (fg: corresponds to the voxels within the brain mask),
   :abbr:`CSF (cerebrospinal fluid)`, :abbr:`GM (gray-matter)` and :abbr:`WM (white-matter)`.
 
 .. _iqms_tpm:
@@ -171,7 +172,7 @@ Other measures
 
   .. [Dietrich2007] Dietrich et al., *Measurement of SNRs in MR images: influence
     of multichannel coils, parallel imaging and reconstruction filters*, JMRI 26(2):375--385.
-    2007. doi:`10.1002/jmri.20969 <http://dx.doi.org/10.1002/jmri.20969>`_.
+    2007. doi:`10.1002/jmri.20969 <https://doi.org/10.1002/jmri.20969>`_.
 
   .. [Ganzetti2016] Ganzetti et al., *Intensity inhomogeneity correction of structural MR images:
     a data-driven approach to define input algorithm parameters*. Front Neuroinform 10:10. 2016.
@@ -180,15 +181,15 @@ Other measures
   .. [Magnota2006] Magnotta, VA., & Friedman, L., *Measurement of signal-to-noise
     and contrast-to-noise in the fBIRN multicenter imaging study*.
     J Dig Imag 19(2):140-147, 2006. doi:`10.1007/s10278-006-0264-x
-    <http://dx.doi.org/10.1007/s10278-006-0264-x>`_.
+    <https://doi.org/10.1007/s10278-006-0264-x>`_.
 
   .. [Mortamet2009] Mortamet B et al., *Automatic quality assessment in
     structural brain magnetic resonance imaging*, Mag Res Med 62(2):365-372,
-    2009. doi:`10.1002/mrm.21992 <http://dx.doi.org/10.1002/mrm.21992>`_.
+    2009. doi:`10.1002/mrm.21992 <https://doi.org/10.1002/mrm.21992>`_.
 
   .. [Tustison2010] Tustison NJ et al., *N4ITK: improved N3 bias correction*,
     IEEE Trans Med Imag, 29(6):1310-20,
-    2010. doi:`10.1109/TMI.2010.2046908 <http://dx.doi.org/10.1109/TMI.2010.2046908>`_.
+    2010. doi:`10.1109/TMI.2010.2046908 <https://doi.org/10.1109/TMI.2010.2046908>`_.
 
   .. [Shehzad2015] Shehzad Z et al., *The Preprocessed Connectomes Project
      Quality Assessment Protocol - a resource for measuring the quality of MRI data*,
@@ -200,17 +201,20 @@ Other measures
      Magn. Reson. Med. 33 (5), 636–647, 1995.
      doi:`10.1002/mrm.1910330508 <https://doi.org/10.1002/mrm.1910330508>`_.
 """
+
+from __future__ import annotations
+
 import os.path as op
 from math import sqrt
 
 import numpy as np
 import scipy.ndimage as nd
 from scipy.stats import kurtosis  # pylint: disable=E0611
+
 from mriqc import config
 
-
 DIETRICH_FACTOR = 0.6551364  # 1.0 / sqrt(2 / (4 - pi))
-FSL_FAST_LABELS = {"csf": 1, "gm": 2, "wm": 3, "bg": 0}
+FSL_FAST_LABELS = {'csf': 1, 'gm': 2, 'wm': 3, 'bg': 0}
 
 
 def snr(mu_fg, sigma_fg, n):
@@ -260,8 +264,8 @@ def snr_dietrich(mu_fg, mad_air=0.0, sigma_air=1.0):
         return float(DIETRICH_FACTOR * mu_fg / mad_air)
 
     config.loggers.interface.warning(
-        "Estimated signal variation in the background was too small "
-        f"(MAD={mad_air}, sigma={sigma_air})",
+        'Estimated signal variation in the background was too small '
+        f'(MAD={mad_air}, sigma={sigma_air})',
     )
     return float(DIETRICH_FACTOR * mu_fg / sigma_air) if sigma_air > 1e-3 else -1.0
 
@@ -316,7 +320,7 @@ def cjv(mu_wm, mu_gm, sigma_wm, sigma_gm):
     return float((sigma_wm + sigma_gm) / abs(mu_wm - mu_gm))
 
 
-def fber(img, headmask, rotmask=None):
+def fber(img, headmask, rotmask=None, decimals=4):
     r"""
     Calculate the :abbr:`FBER (Foreground-Background Energy Ratio)` [Shehzad2015]_,
     defined as the mean energy of image values within the head relative
@@ -345,10 +349,10 @@ def fber(img, headmask, rotmask=None):
     bg_mu = np.median(np.abs(img[airmask == 1]) ** 2)
     if bg_mu < 1.0e-3:
         return -1.0
-    return float(fg_mu / bg_mu)
+    return round(float(fg_mu / bg_mu), decimals)
 
 
-def efc(img, framemask=None):
+def efc(img, framemask=None, decimals=4):
     r"""
     Calculate the :abbr:`EFC (Entropy Focus Criterion)` [Atkinson1997]_.
     Uses the Shannon entropy of voxel intensities as an indication of ghosting
@@ -388,9 +392,14 @@ def efc(img, framemask=None):
     b_max = np.sqrt((img[framemask == 0] ** 2).sum())
 
     # Calculate EFC (add 1e-16 to the image data to keep log happy)
-    return float(
-        (1.0 / efc_max)
-        * np.sum((img[framemask == 0] / b_max) * np.log((img[framemask == 0] + 1e-16) / b_max))
+    return round(
+        float(
+            (1.0 / efc_max)
+            * np.sum(
+                (img[framemask == 0] / b_max) * np.log((img[framemask == 0] + 1e-16) / b_max)
+            ),
+        ),
+        decimals,
     )
 
 
@@ -472,9 +481,9 @@ def art_qi2(
     data[data < 0] = 0
 
     # Write out figure of the fitting
-    out_file = op.abspath("error.svg")
-    with open(out_file, "w") as ofh:
-        ofh.write("<p>Background noise fitting could not be plotted.</p>")
+    out_file = op.abspath('error.svg')
+    with open(out_file, 'w') as ofh:
+        ofh.write('<p>Background noise fitting could not be plotted.</p>')
 
     if (data > 0).sum() < min_voxels:
         return 0.0, out_file
@@ -485,7 +494,7 @@ def art_qi2(
     x_grid = np.linspace(0.0, 110, 1000)
 
     # Estimate data pdf with KDE on a random subsample
-    kde_skl = KernelDensity(kernel="gaussian", bandwidth=4.0).fit(modelx[:, np.newaxis])
+    kde_skl = KernelDensity(kernel='gaussian', bandwidth=4.0).fit(modelx[:, np.newaxis])
     kde = np.exp(kde_skl.score_samples(x_grid[:, np.newaxis]))
 
     # Find cutoff
@@ -556,49 +565,76 @@ def rpve(pvms, seg):
     return {k: float(v) for k, v in list(pvfs.items())}
 
 
-def summary_stats(data, pvms, airmask=None, erode=True):
-    r"""
-    Estimates the mean, the median, the standard deviation,
-    the kurtosis,the median absolute deviation (mad), the 95\%
-    and the 5\% percentiles and the number of voxels (summary\_\*\_n)
-    of each tissue distribution.
+def summary_stats(
+    data: np.ndarray,
+    pvms: dict[str, np.ndarray],
+    rprec_data: int = 0,
+    rprec_prob: int = 3,
+    decimals: int = 4,
+) -> dict[str, dict[str, float]]:
+    """
+    Estimates weighted summary statistics for each tissue distribution in the data.
 
-    .. warning ::
+    This function calculates the mean, median, standard deviation, kurtosis, median
+    absolute deviation (MAD), the 95th and 5th percentiles, and the number of voxels for
+    each tissue distribution defined by a label in the provided partial volume maps (pvms).
 
-        Sometimes (with datasets that have been partially processed), the air
-        mask will be empty. In those cases, the background stats will be zero
-        for the mean, median, percentiles and kurtosis, the sum of voxels in
-        the other remaining labels for ``n``, and finally the MAD and the
-        :math:`\sigma` will be calculated as:
+    Parameters
+    ----------
+    data : :obj:`~numpy.ndarray` (float, 3D)
+        A three-dimensional array of data from which summary statistics will be extracted.
+    pvms : :obj:`dict` of :obj:`str` keys and :obj:`~numpy.ndarray` (float, 3D) values
+        A dictionary of partial volume maps where the key indicates the label of a
+        region-of-interest (ROI) and the values are three-dimensional arrays matched in size
+        with `data` and containing the probability/fraction of the voxel containing the given
+        label.
+    rprec_data : :obj:`int`, optional (default=0)
+        Number of decimal places to round the data array before calculation. Rounding
+        alleviates floating-point error variability by explicitly rounding before
+        quantification operations.
+    rprec_prob : :obj:`int`, optional (default=3)
+        Number of decimal places to round the probability maps before calculation. Rounding
+        alleviates floating-point error variability by explicitly rounding before
+        quantification operations.
 
-        .. math ::
+    Returns
+    -------
+    :obj:`dict`
+        A dictionary where the keys are labels from the ``pvms`` dictionary and the values
+        are dictionaries containing the following keys for each tissue distribution:
 
-            \sigma_\text{BG} = \sqrt{\sum \sigma_\text{i}^2}
-
+            * ``'mean'``: :obj:`float` - Mean value
+            * ``'median'``: :obj:`float` - Median value
+            * ``'p95'``: :obj:`float` - 95th percentile
+            * ``'p05'``: :obj:`float` - 5th percentile
+            * ``'k'``: :obj:`float` - Kurtosis
+            * ``'stdv'``: :obj:`float` - Standard deviation
+            * ``'mad'``: :obj:`float` - Median absolute deviation
+            * ``'n'``: :obj:`int` - Number of voxels in the tissue distribution
 
     """
-    from statsmodels.stats.weightstats import DescrStatsW
     from statsmodels.robust.scale import mad
+    from statsmodels.stats.weightstats import DescrStatsW
 
     output = {}
     for label, probmap in pvms.items():
-        wstats = DescrStatsW(data=data.reshape(-1), weights=probmap.reshape(-1))
-        nvox = probmap.sum()
-        p05, median, p95 = wstats.quantile(
-            np.array([0.05, 0.50, 0.95]),
-            return_pandas=False,
+        wstats = DescrStatsW(
+            data=np.round(data.reshape(-1), rprec_data),
+            weights=np.round(probmap.astype(np.float32).reshape(-1), rprec_prob),
         )
+        nvox = probmap.sum()
+        p05, median, p95 = wstats.quantile(np.array([0.05, 0.50, 0.95]), return_pandas=False)
         thresholded = data[probmap > (0.5 * probmap.max())]
 
         output[label] = {
-            "mean": float(wstats.mean),
-            "median": float(median),
-            "p95": float(p95),
-            "p05": float(p05),
-            "k": float(kurtosis(thresholded)),
-            "stdv": float(wstats.std),
-            "mad": float(mad(thresholded, center=median)),
-            "n": float(nvox),
+            'mean': round(float(wstats.mean), decimals),
+            'median': round(float(median), decimals),
+            'p95': round(float(p95), decimals),
+            'p05': round(float(p05), decimals),
+            'k': round(float(kurtosis(thresholded)), decimals),
+            'stdv': round(float(wstats.std), decimals),
+            'mad': round(float(mad(thresholded, center=median)), decimals),
+            'n': float(nvox),
         }
 
     return output

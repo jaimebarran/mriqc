@@ -1,5 +1,6 @@
 Welcome to *MRIQC*'s documentation!
-===================================
+###################################
+
 .. include:: ../../README.rst
    :start-line: 3
 
@@ -7,21 +8,22 @@ Welcome to *MRIQC*'s documentation!
 
 Contents
 --------
+
 .. toctree::
    :maxdepth: 3
 
    about
    install
-   running
-   docker
+   usage
    measures
    reports
    workflows
    dsa
    license
+   changes
 
 Indices and tables
-==================
+------------------
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`

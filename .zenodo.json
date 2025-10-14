@@ -8,11 +8,6 @@
       "name": "Oscar Esteban"
     },
     {
-      "orcid": "0000-0001-7159-1387",
-      "affiliation": "Sagol School of Neuroscience, Tel Aviv University, Tel Aviv, Israel",
-      "name": "Zvi Baratz"
-    },
-    {
       "orcid": "0000-0002-6533-164X",
       "affiliation": "Department of Psychology, Stanford University, CA, USA",
       "name": "Christopher J. Markiewicz"
@@ -24,7 +19,7 @@
     },
     {
       "orcid": "0000-0002-1668-9629",
-      "affiliation": "Lausanne University Hospital and University of Lausanne, Lausanne, Switzerland",
+      "affiliation": "Department of Radiology, Lausanne University Hospital and University of Lausanne, Switzerland",
       "name": "C\u00e9line Provins"
     },
     {
@@ -34,6 +29,17 @@
     }
   ],
   "contributors": [
+    {
+      "orcid": "0000-0001-7159-1387",
+      "affiliation": "Quantivly Inc., Somerville, MA, USA",
+      "name": "Zvi Baratz",
+      "type": "Researcher"
+    },
+    {
+      "affiliation": "The University of Washington eScience Institute, WA, USA",
+      "name": "Teresa Gomez",
+      "type": "Researcher"
+    },
     {
       "orcid": "0000-0003-4613-6643",
       "affiliation": "Section on Clinical and Computational Psychiatry, National Institute of Mental Health, Bethesda, MD, USA",
@@ -49,6 +55,18 @@
       "orcid": "0000-0003-3007-1056",
       "affiliation": "Department of Psychology, Stanford University, CA, USA",
       "name": "Ross W. Blair",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0003-0679-1985",
+      "affiliation": "The University of Washington eScience Institute, WA, USA",
+      "name": "Ariel Rokem",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0002-1242-8990",
+      "affiliation": "NeuroSpin, CEA, Universit\u00e9 Paris-Saclay, NeuroSpin, Gif-sur-Yvette, France",
+      "name": "Dimitri Papadopoulos Orfanos",
       "type": "Researcher"
     },
     {
@@ -75,21 +93,39 @@
       "type": "Researcher"
     },
     {
+      "orcid": "0000-0002-9661-1396",
+      "affiliation": "Brigham and Women's Hospital, Mass General Brigham, Harvard Medical School, MA, USA",
+      "name": "Jon Haitz Legarreta Gorro\u00f1o",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0003-4141-1343",
+      "affiliation": "Johns Hopkins Bloomberg School of Public Health, MD, USA",
+      "name": "Patrick Sadil",
+      "type": "Researcher"
+    },
+    {
       "orcid": "0000-0001-6377-3885",
       "affiliation": "Department of Neuroscience, University of Pennsylvania, PA, USA",
       "name": "Ursula A. Tooley",
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0002-4892-2659",
-      "affiliation": "Department of Psychology, University of Texas at Austin, TX, USA",
-      "name": "James D. Kent",
-      "type": "Researcher"
-    },
-    {
       "orcid": "0000-0003-3456-2493",
       "affiliation": "Psychological and Brain Sciences Department, Dartmouth College, NH, USA",
       "name": "Yaroslav O. Halchenko",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0003-2882-0900",
+      "affiliation": "McGovern Institute for Brain Research, Massachusetts Institute of Technology, Cambridge, USA",
+      "name": "Yibei Chen",
+      "type": "Researcher"
+    },
+    {
+      "orcid": "0000-0002-4892-2659",
+      "affiliation": "Department of Psychology, University of Texas at Austin, TX, USA",
+      "name": "James D. Kent",
       "type": "Researcher"
     },
     {
@@ -150,9 +186,8 @@
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0003-0679-1985",
-      "affiliation": "The University of Washington eScience Institute, WA, USA",
-      "name": "Ariel Rokem",
+      "affiliation": "Center for Innovation in Brain Science, University of Arizona, Tucson, AZ, USA",
+      "name": "Adam C. Raikes",
       "type": "Researcher"
     },
     {
@@ -173,14 +208,14 @@
       "type": "Researcher"
     },
     {
-      "affiliation": "National Institutes of Health, USA",
-      "name": "Michael G. Clark",
+      "orcid": "0000-0002-2666-0969",
+      "affiliation": "International Committee of the Red Cross - ICRC, Geneva, Switzerland",
+      "name": "Michael Dayan",
       "type": "Researcher"
     },
     {
-      "orcid": "0000-0003-4141-1343",
-      "affiliation": "Johns Hopkins Bloomberg School of Public Health, MD, USA",
-      "name": "Patrick Sadil",
+      "affiliation": "National Institutes of Health, USA",
+      "name": "Michael G. Clark",
       "type": "Researcher"
     },
     {
